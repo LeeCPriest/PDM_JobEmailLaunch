@@ -64,9 +64,9 @@ Namespace My
     Friend Module MySettingsProperty
         
         <Global.System.ComponentModel.Design.HelpKeywordAttribute("My.Settings")>  _
-        Friend ReadOnly Property Settings() As Global.JobEmailLaunch.My.MySettings
+        Friend ReadOnly Property Settings() As Global.BatchPDM.My.MySettings
             Get
-                Return Global.JobEmailLaunch.My.MySettings.Default
+                Return Global.BatchPDM.My.MySettings.Default
             End Get
         End Property
     End Module
