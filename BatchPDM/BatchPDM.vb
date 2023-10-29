@@ -25,7 +25,8 @@ Public Class BatchPDM
             poInfo.mlRequiredVersionMajor = 8
             poInfo.mlRequiredVersionMinor = 0
 
-            poCmdMgr.AddCmd(1, "Batch Set Assy Filename", EdmMenuFlags.EdmMenu_MustHaveSelection + EdmMenuFlags.EdmMenu_OnlyFolders)
+            'poCmdMgr.AddCmd(1, "Batch Set Assy Filename", EdmMenuFlags.EdmMenu_MustHaveSelection + EdmMenuFlags.EdmMenu_OnlyFolders)
+            poCmdMgr.AddHook(EdmCmdType.EdmCmd_PostAdd)
         Catch
         End Try
 
@@ -33,37 +34,65 @@ Public Class BatchPDM
 
     Public Sub OnCmd(ByRef poCmd As EdmCmd, ByRef ppoData As Array) Implements IEdmAddIn5.OnCmd
 
-        If poCmd.meCmdType = EdmCmdType.EdmCmd_Menu Then
+        If poCmd.meCmdType = EdmCmdType.EdmCmd_PostAdd Then
 
-            If poCmd.mlCmdID = 1 Then
+            PopulateCode(poCmd, ppoData)
 
-                Dim eVault As EdmVault5 = poCmd.mpoVault
+        End If
 
-                Dim eUserMgr As IEdmUserMgr5 = eVault.CreateUtility(EdmUtility.EdmUtil_UserMgr)
-                Dim eUser As IEdmUser5 = eUserMgr.GetLoggedInUser()
+        'If poCmd.meCmdType = EdmCmdType.EdmCmd_Menu Then
 
-                If eUser.Name.ToLower() = "admin" Then
+        '    If poCmd.mlCmdID = 1 Then
 
-                    Dim confirmList As String = ""
-                    For Each folderData As EdmCmdData In ppoData
-                        confirmList += folderData.mbsStrData1 + vbNewLine
-                    Next
+        '        Dim eVault As EdmVault5 = poCmd.mpoVault
 
-                    Dim firstFolderData As EdmCmdData = ppoData(0)
-                    Dim folderLetter As String = Strings.Left(firstFolderData.mbsStrData1, 1)
+        '        Dim eUserMgr As IEdmUserMgr5 = eVault.CreateUtility(EdmUtility.EdmUtil_UserMgr)
+        '        Dim eUser As IEdmUser5 = eUserMgr.GetLoggedInUser()
 
-                    If MsgBox(confirmList, MsgBoxStyle.OkCancel) = MsgBoxResult.Ok Then
-                        FindFiles(poCmd, ppoData, eVault, folderLetter)
-                    End If
-                Else
+        '        If eUser.Name.ToLower() = "admin" Then
 
-                    MsgBox("Adming login required to run this function", MsgBoxStyle.Exclamation, "BatchPDM")
+        '            Dim confirmList As String = ""
+        '            For Each folderData As EdmCmdData In ppoData
+        '                confirmList += folderData.mbsStrData1 + vbNewLine
+        '            Next
 
-                End If
+        '            Dim firstFolderData As EdmCmdData = ppoData(0)
+        '            Dim folderLetter As String = Strings.Left(firstFolderData.mbsStrData1, 1)
+
+        '            If MsgBox(confirmList, MsgBoxStyle.OkCancel) = MsgBoxResult.Ok Then
+        '                FindFiles(poCmd, ppoData, eVault, folderLetter)
+        '            End If
+        '        Else
+
+        '            MsgBox("Adming login required to run this function", MsgBoxStyle.Exclamation, "BatchPDM")
+
+        '        End If
+
+        '    End If
+
+        'End If
+
+    End Sub
+
+    Private Sub PopulateCode(ByRef poCmd As EdmCmd, ByRef ppoData As Array)
+
+        Dim eVault As EdmVault5 = poCmd.mpoVault
+
+        For Each filename In ppoData
+
+            If Strings.Right(filename, 6).ToLower() = "sldasm" Then
+
+                Dim eFile As IEdmFile5 = eVault.GetFileFromPath(filename)
+
+                Dim splitName() As String = eFile.Name.ToString.Split(New String() {" "}, StringSplitOptions.None)
+
+                Dim eFileCard As IEdmEnumeratorVariable5 = eFile.GetEnumeratorVariable()
+                eFileCard.SetVar("Codigo", "@", splitName(0))
+                eFileCard.Flush()
 
             End If
 
-        End If
+        Next
 
     End Sub
 
