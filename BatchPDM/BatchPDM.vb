@@ -25,7 +25,8 @@ Public Class BatchPDM
             poInfo.mlRequiredVersionMajor = 8
             poInfo.mlRequiredVersionMinor = 0
 
-            'poCmdMgr.AddCmd(1, "Batch Set Assy Filename", EdmMenuFlags.EdmMenu_MustHaveSelection + EdmMenuFlags.EdmMenu_OnlyFolders)
+            poCmdMgr.AddCmd(1, "Batch Check Assy Material", EdmMenuFlags.EdmMenu_MustHaveSelection + EdmMenuFlags.EdmMenu_OnlyFolders)
+            poCmdMgr.AddCmd(2, "Batch Remove Assy Material", EdmMenuFlags.EdmMenu_MustHaveSelection + EdmMenuFlags.EdmMenu_OnlyFolders)
             poCmdMgr.AddHook(EdmCmdType.EdmCmd_PostAdd)
         Catch
         End Try
@@ -40,37 +41,63 @@ Public Class BatchPDM
 
         End If
 
-        'If poCmd.meCmdType = EdmCmdType.EdmCmd_Menu Then
+        If poCmd.meCmdType = EdmCmdType.EdmCmd_Menu Then
 
-        '    If poCmd.mlCmdID = 1 Then
+            If poCmd.mlCmdID = 1 Then
 
-        '        Dim eVault As EdmVault5 = poCmd.mpoVault
+                Dim eVault As EdmVault5 = poCmd.mpoVault
 
-        '        Dim eUserMgr As IEdmUserMgr5 = eVault.CreateUtility(EdmUtility.EdmUtil_UserMgr)
-        '        Dim eUser As IEdmUser5 = eUserMgr.GetLoggedInUser()
+                Dim eUserMgr As IEdmUserMgr5 = eVault.CreateUtility(EdmUtility.EdmUtil_UserMgr)
+                Dim eUser As IEdmUser5 = eUserMgr.GetLoggedInUser()
 
-        '        If eUser.Name.ToLower() = "admin" Then
+                If eUser.Name.ToLower() = "admin" Then
 
-        '            Dim confirmList As String = ""
-        '            For Each folderData As EdmCmdData In ppoData
-        '                confirmList += folderData.mbsStrData1 + vbNewLine
-        '            Next
+                    Dim confirmList As String = ""
+                    For Each folderData As EdmCmdData In ppoData
+                        confirmList += folderData.mbsStrData1 + vbNewLine
+                    Next
 
-        '            Dim firstFolderData As EdmCmdData = ppoData(0)
-        '            Dim folderLetter As String = Strings.Left(firstFolderData.mbsStrData1, 1)
+                    Dim firstFolderData As EdmCmdData = ppoData(0)
+                    Dim folderLetter As String = Strings.Left(firstFolderData.mbsStrData1, 1)
 
-        '            If MsgBox(confirmList, MsgBoxStyle.OkCancel) = MsgBoxResult.Ok Then
-        '                FindFiles(poCmd, ppoData, eVault, folderLetter)
-        '            End If
-        '        Else
+                    If MsgBox(confirmList, MsgBoxStyle.OkCancel, "Check Material") = MsgBoxResult.Ok Then
+                        FindFiles(poCmd, ppoData, eVault, folderLetter, True)
+                    End If
+                Else
 
-        '            MsgBox("Adming login required to run this function", MsgBoxStyle.Exclamation, "BatchPDM")
+                    MsgBox("Adming login required to run this function", MsgBoxStyle.Exclamation, "Serrat Automation")
 
-        '        End If
+                End If
 
-        '    End If
+            ElseIf poCmd.mlCmdID = 2 Then
 
-        'End If
+                Dim eVault As EdmVault5 = poCmd.mpoVault
+
+                Dim eUserMgr As IEdmUserMgr5 = eVault.CreateUtility(EdmUtility.EdmUtil_UserMgr)
+                Dim eUser As IEdmUser5 = eUserMgr.GetLoggedInUser()
+
+                If eUser.Name.ToLower() = "admin" Then
+
+                    Dim confirmList As String = ""
+                    For Each folderData As EdmCmdData In ppoData
+                        confirmList += folderData.mbsStrData1 + vbNewLine
+                    Next
+
+                    Dim firstFolderData As EdmCmdData = ppoData(0)
+                    Dim folderLetter As String = Strings.Left(firstFolderData.mbsStrData1, 1)
+
+                    If MsgBox(confirmList, MsgBoxStyle.OkCancel, "Remove Material") = MsgBoxResult.Ok Then
+                        FindFiles(poCmd, ppoData, eVault, folderLetter, False)
+                    End If
+                Else
+
+                    MsgBox("Adming login required to run this function", MsgBoxStyle.Exclamation, "Serrat Automation")
+
+                End If
+
+            End If
+
+        End If
 
     End Sub
 
@@ -105,7 +132,7 @@ Public Class BatchPDM
 
     End Sub
 
-    Private Sub FindFiles(poCmd As EdmCmd, ByRef ppoData As System.Array, eVault As EdmVault5, folderLetter As String)
+    Private Sub FindFiles(poCmd As EdmCmd, ByRef ppoData As System.Array, eVault As EdmVault5, folderLetter As String, findReadOnly As Boolean)
 
         Dim eFolder As IEdmFolder6 = Nothing
 
@@ -132,9 +159,13 @@ Public Class BatchPDM
 
                         If eFolder IsNot Nothing Then
                             'TraverseFolderForParts(swApp, count, eFolder)
-                            TraverseFolderForAssemblies(swDmApp, count, eFolder, folderLetter)
+                            If findReadOnly = False Then
+                                TraverseFolderForAssemblies(swDmApp, count, eFolder, folderLetter)
+                            Else
+                                TraverseFolderForAssembliesReadOnly(swDmApp, count, eFolder)
+                            End If
                         Else
-                            WriteToLog(True, $"Unable to get folder object with ID: {folderData.mlObjectID2}", folderLetter)
+                            WriteToLog(True, $"Unable to get folder object with ID: {folderData.mlObjectID2}")
                         End If
 
                         eFolder = Nothing
@@ -144,7 +175,7 @@ Public Class BatchPDM
                 CloseSW(swApp)
 
                 MsgBox($"Successfully processed {count} files", MsgBoxStyle.Information, "BatchPDM")
-                WriteToLog(False, $"Job complete - Successfully processed {count} files", folderLetter)
+                'WriteToLog(False, $"Job complete - Successfully processed {count} files", folderLetter)
 
             End If
 
@@ -155,6 +186,72 @@ Public Class BatchPDM
             MsgBox($"The following error occurred:{vbNewLine}{vbNewLine}{ex.Message} (Line: {st.GetFrame(0).GetFileLineNumber()})", MsgBoxStyle.Exclamation, My.Application.Info.AssemblyName)
 
         End Try
+
+    End Sub
+
+    Sub TraverseFolderForAssembliesReadOnly(ByRef swDmApp As SwDMApplication4, ByRef count As Integer, eFolder As IEdmFolder5)
+
+        If eFolder IsNot Nothing Then
+
+            Dim pdmFilePos As IEdmPos5
+            pdmFilePos = eFolder.GetFirstFilePosition()
+
+            While pdmFilePos.IsNull = False
+                Dim eFile As IEdmFile5
+                eFile = eFolder.GetNextFile(pdmFilePos)
+
+                If eFile IsNot Nothing Then
+
+                    If Strings.Right(eFile.Name, 6).ToLower() = "sldasm" Then
+
+                        Dim result As SwDmDocumentOpenError
+                        Dim swDoc As SwDMDocument10 = swDmApp.GetDocument(eFile.GetLocalPath(eFolder.ID), SwDmDocumentType.swDmDocumentAssembly, True, result)
+
+                        If result <> SwDmDocumentOpenError.swDmDocumentOpenErrorNone Then
+                            WriteToLog(True, $"Error opening file: {result.ToString} ({eFile.Name})")
+                            'Else
+                            '    WriteToLog(False, $"Success setting filename property: {eFile.Name}")
+                        End If
+
+                        Dim propExists As Boolean = False
+
+                        Dim configNames As Object = swDoc.ConfigurationManager.GetConfigurationNames
+
+                        For Each configName In configNames
+                            Dim swConfig As SwDMConfiguration10 = swDoc.ConfigurationManager.GetConfigurationByName(configName)
+
+                            Dim propNames As Object = swConfig.GetCustomPropertyNames
+
+                            For Each propName In propNames
+
+                                If propName = "Material" Then propExists = True
+
+                            Next
+
+                        Next
+
+                        swDoc.CloseDoc()
+
+                        If propExists = True Then WriteToLog(False, $"Material property exists: {eFile.Name}")
+
+                        count += 1
+
+                    End If
+                End If
+
+            End While
+
+            Dim pdmSubFolderPos As IEdmPos5
+            pdmSubFolderPos = eFolder.GetFirstSubFolderPosition()
+
+            While Not pdmSubFolderPos.IsNull
+                Dim pdmSubFolder As IEdmFolder5
+                pdmSubFolder = eFolder.GetNextSubFolder(pdmSubFolderPos)
+
+                TraverseFolderForAssembliesReadOnly(swDmApp, count, pdmSubFolder)
+            End While
+
+        End If
 
     End Sub
 
@@ -177,46 +274,48 @@ Public Class BatchPDM
                             If eFile.LockedByUser.Name.ToLower() = "admin" Then
 
                                 'SetAssyProps(swApp, eFile.LockPath, folderLetter)
-                                SetFilenameProperty(eFile, folderLetter)
+                                'SetFilenameProperty(eFile, folderLetter)
 
-                                Dim splitName() As String = eFile.Name.ToString.Split(New String() {" "}, StringSplitOptions.None)
+                                'Dim splitName() As String = eFile.Name.ToString.Split(New String() {" "}, StringSplitOptions.None)
 
-                                If splitName.GetUpperBound(0) > 0 Then
+                                'If splitName.GetUpperBound(0) > 0 Then
 
-                                    Dim result As SwDmDocumentOpenError
-                                    Dim swDoc As SwDMDocument10 = swDmApp.GetDocument(eFile.LockPath, SwDmDocumentType.swDmDocumentAssembly, False, result)
+                                Dim result As SwDmDocumentOpenError
+                                Dim swDoc As SwDMDocument10 = swDmApp.GetDocument(eFile.LockPath, SwDmDocumentType.swDmDocumentAssembly, False, result)
 
-                                    If result <> SwDmDocumentOpenError.swDmDocumentOpenErrorNone Then
-                                        WriteToLog(True, $"Error opening file: {result.ToString} ({eFile.Name})", folderLetter)
-                                    Else
-                                        WriteToLog(False, $"Success setting filename property: {eFile.Name}", folderLetter)
-                                    End If
+                                If result <> SwDmDocumentOpenError.swDmDocumentOpenErrorNone Then
+                                    WriteToLog(True, $"Error opening file: {result.ToString} ({eFile.Name})", folderLetter)
+                                Else
+                                    WriteToLog(False, $"Success setting filename property: {eFile.Name}", folderLetter)
+                                End If
 
-                                    Dim configNames As Object = swDoc.ConfigurationManager.GetConfigurationNames
+                                Dim configNames As Object = swDoc.ConfigurationManager.GetConfigurationNames
 
-                                    For Each configName In configNames
-                                        Dim swConfig As SwDMConfiguration10 = swDoc.ConfigurationManager.GetConfigurationByName(configName)
+                                For Each configName In configNames
+                                    Dim swConfig As SwDMConfiguration10 = swDoc.ConfigurationManager.GetConfigurationByName(configName)
 
-                                        Dim propNames As Object = swConfig.GetCustomPropertyNames
+                                    Dim propNames As Object = swConfig.GetCustomPropertyNames
 
-                                        For Each propName In propNames
-                                            Dim propExists As Boolean = False
-                                            If propName = "Código" Then propExists = True
+                                    For Each propName In propNames
+                                        Dim propExists As Boolean = False
+                                        If propName = "Material" Then
+                                            swConfig.DeleteCustomProperty("Material")
+                                        End If
 
-                                            If propExists = True Then
-                                                swConfig.SetCustomProperty("Código", splitName(0))
-                                            Else
-                                                swConfig.AddCustomProperty("Código", SwDmCustomInfoType.swDmCustomInfoText, splitName(0))
-                                            End If
-
-                                        Next
+                                        'If propExists = True Then
+                                        '    swConfig.SetCustomProperty("Código", splitName(0))
+                                        'Else
+                                        '    swConfig.AddCustomProperty("Código", SwDmCustomInfoType.swDmCustomInfoText, splitName(0))
+                                        'End If
 
                                     Next
 
-                                    swDoc.Save()
-                                    swDoc.CloseDoc()
+                                Next
 
-                                End If
+                                swDoc.Save()
+                                swDoc.CloseDoc()
+
+                                'End If
 
                                 count += 1
 
@@ -449,7 +548,7 @@ Public Class BatchPDM
         swProcess(0).WaitForExit()
     End Sub
 
-    Private Sub WriteToLog(logError As Boolean, message As String, folderLetter As String)
+    Private Sub WriteToLog(logError As Boolean, message As String, Optional folderLetter As String = "")
 
         Dim messageType As String = " [INFO]"
         If logError = True Then
@@ -461,7 +560,12 @@ Public Class BatchPDM
 
         End If
 
-        Dim streamWriter As New StreamWriter($"{LOGPATH}{Strings.Format(DateTime.Now, "yyMMdd")}_{folderLetter}.txt", True)
+        Dim messageLogPath As String = $"{LOGPATH}{Strings.Format(DateTime.Now, "yyMMdd")}"
+
+        If folderLetter <> "" Then messageLogPath += $"_{folderLetter}"
+        messageLogPath += ".txt"
+
+        Dim streamWriter As New StreamWriter(messageLogPath, True)
         streamWriter.WriteLine($"{messageType} {Strings.Format(DateTime.Now, "hhmmss")}: {message}")
         streamWriter.Close()
 
