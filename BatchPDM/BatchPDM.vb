@@ -31,10 +31,16 @@ Public Class BatchPDM
             'poCmdMgr.AddCmd(3, "Process IN Freeze Bar", EdmMenuFlags.EdmMenu_ShowInMenuBarAction)
             'poCmdMgr.AddCmd(4, "Check out Files with Property Missing", EdmMenuFlags.EdmMenu_ShowInMenuBarAction)
             'poCmdMgr.AddCmd(5, "Set Part Properties", EdmMenuFlags.EdmMenu_ShowInMenuBarAction)
-            'poCmdMgr.AddCmd(6, "Increment Part Revisions", EdmMenuFlags.EdmMenu_MustHaveSelection + EdmMenuFlags.EdmMenu_OnlyFolders)
-            poCmdMgr.AddCmd(7, "Find Macro Runner", EdmMenuFlags.EdmMenu_MustHaveSelection + EdmMenuFlags.EdmMenu_OnlyFolders)
-            poCmdMgr.AddCmd(8, "Get Latest In Selected Folder(s)", EdmMenuFlags.EdmMenu_MustHaveSelection + EdmMenuFlags.EdmMenu_OnlyFolders)
-            poCmdMgr.AddCmd(9, "Find grams", EdmMenuFlags.EdmMenu_MustHaveSelection + EdmMenuFlags.EdmMenu_OnlyFolders)
+            'poCmdMgr.AddCmd(6, "Approve Files", EdmMenuFlags.EdmMenu_MustHaveSelection + EdmMenuFlags.EdmMenu_OnlyFolders)
+            'poCmdMgr.AddCmd(7, "Find Macro Runner", EdmMenuFlags.EdmMenu_MustHaveSelection + EdmMenuFlags.EdmMenu_OnlyFolders)
+            'poCmdMgr.AddCmd(8, "Get Latest In Selected Folder(s)", EdmMenuFlags.EdmMenu_MustHaveSelection + EdmMenuFlags.EdmMenu_OnlyFolders)
+            'poCmdMgr.AddCmd(9, "Find grams", EdmMenuFlags.EdmMenu_MustHaveSelection + EdmMenuFlags.EdmMenu_OnlyFolders)
+            'poCmdMgr.AddCmd(10, "Check Assy Units", EdmMenuFlags.EdmMenu_ShowInMenuBarAction)
+            'poCmdMgr.AddCmd(11, "Check Librería Approval Status", EdmMenuFlags.EdmMenu_MustHaveSelection + EdmMenuFlags.EdmMenu_OnlyFolders)
+            'poCmdMgr.AddCmd(12, "Set ERP Properties", EdmMenuFlags.EdmMenu_MustHaveSelection + EdmMenuFlags.EdmMenu_OnlyFolders)
+            'poCmdMgr.AddCmd(14, "Get ERP Properties", EdmMenuFlags.EdmMenu_MustHaveSelection + EdmMenuFlags.EdmMenu_OnlyFolders)
+            poCmdMgr.AddCmd(15, "Update Files", EdmMenuFlags.EdmMenu_MustHaveSelection + EdmMenuFlags.EdmMenu_OnlyFolders)
+            poCmdMgr.AddCmd(16, "Rename Files", EdmMenuFlags.EdmMenu_MustHaveSelection + EdmMenuFlags.EdmMenu_OnlyFolders)
             poCmdMgr.AddHook(EdmCmdType.EdmCmd_PostAdd)
         Catch
         End Try
@@ -54,9 +60,8 @@ Public Class BatchPDM
         Dim eUserMgr As IEdmUserMgr5 = eVault.CreateUtility(EdmUtility.EdmUtil_UserMgr)
         Dim eUser As IEdmUser5 = eUserMgr.GetLoggedInUser()
 
-        If eUser.Name.ToLower() = "admin" Then
-
-            If poCmd.meCmdType = EdmCmdType.EdmCmd_Menu Then
+        If poCmd.meCmdType = EdmCmdType.EdmCmd_Menu Then
+            If eUser.Name.ToLower() = "admin" Then
 
                 If poCmd.mlCmdID = 1 Then
 
@@ -108,8 +113,8 @@ Public Class BatchPDM
                         confirmList += folderData.mbsStrData1 + vbNewLine
                     Next
 
-                    If MsgBox(confirmList, MsgBoxStyle.OkCancel, "Set Part Revisions") = MsgBoxResult.Ok Then
-                        SetPartRevisions(poCmd, ppoData, eVault)
+                    If MsgBox(confirmList, MsgBoxStyle.OkCancel, "Approve Files") = MsgBoxResult.Ok Then
+                        ApproveFiles(poCmd, ppoData, eVault)
                     End If
 
                 ElseIf poCmd.mlCmdID = 7 Then
@@ -124,14 +129,564 @@ Public Class BatchPDM
 
                     FindGrams(poCmd, ppoData, eVault)
 
+                ElseIf poCmd.mlCmdID = 10 Then
+
+                    CheckAssyUnits(poCmd, ppoData, "C:\Users\administrador\Desktop\Macros\Logs\UnitsLog-Assy.txt")
+
+                ElseIf poCmd.mlCmdID = 11 Then
+
+                    FindNonApproved(poCmd, ppoData, eVault)
+
+                ElseIf poCmd.mlCmdID = 12 Then
+
+                    Dim confirmList As String = ""
+                    For Each folderData As EdmCmdData In ppoData
+                        confirmList += folderData.mbsStrData1 + vbNewLine
+                    Next
+
+                    Dim firstFolderData As EdmCmdData = ppoData(0)
+                    Dim folderLetter As String = Strings.Left(firstFolderData.mbsStrData1, 1)
+
+                    'Dim csvPath As String = "C:\Users\administrador\Desktop\Macros\IQMS_ARINVT_CODES.csv"
+                    Dim csvPath As String = "C:\Users\administrador.SERRAT\Desktop\Macros\IQMS_ARINVT_CODES.csv"
+
+                    If MsgBox(confirmList, MsgBoxStyle.OkCancel, "Set ERP Properties") = MsgBoxResult.Ok Then
+                        FindFiles_SetID(poCmd, ppoData, eVault, csvPath)
+                    End If
+
+                ElseIf poCmd.mlCmdID = 14 Then
+
+                    Dim confirmList As String = ""
+                    For Each folderData As EdmCmdData In ppoData
+                        confirmList += folderData.mbsStrData1 + vbNewLine
+                    Next
+
+                    Dim firstFolderData As EdmCmdData = ppoData(0)
+                    Dim folderLetter As String = Strings.Left(firstFolderData.mbsStrData1, 1)
+
+                    'Dim csvPath As String = "C:\Users\administrador\Desktop\Macros\IQMS_ARINVT_CODES.csv"
+                    Dim csvPath As String = "C:\Users\administrador.SERRAT\Desktop\Macros\IQMS_ARINVT_CODES.csv"
+
+                    If MsgBox(confirmList, MsgBoxStyle.OkCancel, "Get ERP Properties") = MsgBoxResult.Ok Then
+                        FindFiles_GetID(poCmd, ppoData, eVault, csvPath)
+                    End If
+
+                ElseIf poCmd.mlCmdID = 15 Then
+
+                    Dim confirmList As String = ""
+                    For Each folderData As EdmCmdData In ppoData
+                        confirmList += folderData.mbsStrData1 + vbNewLine
+                    Next
+
+                    Dim firstFolderData As EdmCmdData = ppoData(0)
+                    Dim folderLetter As String = Strings.Left(firstFolderData.mbsStrData1, 1)
+
+                    Dim csvPath As String = "C:\Users\administrador.SERRAT\Desktop\Macros\TBD.csv"
+
+                    If MsgBox(confirmList, MsgBoxStyle.OkCancel, "Update Files") = MsgBoxResult.Ok Then
+                        FindFiles_UpdateOrRename(poCmd, ppoData, eVault, csvPath, False)
+                    End If
+
+                ElseIf poCmd.mlCmdID = 16 Then
+
+                    Dim confirmList As String = ""
+                    For Each folderData As EdmCmdData In ppoData
+                        confirmList += folderData.mbsStrData1 + vbNewLine
+                    Next
+
+                    Dim firstFolderData As EdmCmdData = ppoData(0)
+                    Dim folderLetter As String = Strings.Left(firstFolderData.mbsStrData1, 1)
+
+                    Dim csvPath As String = "C:\Users\administrador.SERRAT\Desktop\Macros\TBD.csv"
+
+                    If MsgBox(confirmList, MsgBoxStyle.OkCancel, "Rename Files") = MsgBoxResult.Ok Then
+                        FindFiles_UpdateOrRename(poCmd, ppoData, eVault, csvPath, True)
+                    End If
+
                 End If
 
-            End If
-        Else
+            Else
 
-            MsgBox("Adming login required to run this function", MsgBoxStyle.Exclamation, "Serrat Automation")
+                MsgBox("Adming login required to run this function", MsgBoxStyle.Exclamation, "Serrat Automation")
+            End If
+
 
         End If
+
+    End Sub
+
+    Structure FilePropertyChanges
+
+        Dim type_old As String
+        Dim type_new As String
+        Dim code_old As String
+        Dim code_new As String
+        Dim desc_old As String
+        Dim desc_new As String
+
+    End Structure
+
+    Private Function ReadCSVtoFileProperty(csvPath As String) As Dictionary(Of String, FilePropertyChanges)
+
+        Dim streamReader As New StreamReader(csvPath)
+        Dim splitLine() As String
+        Dim FilePropertyChangesList As New Dictionary(Of String, FilePropertyChanges)
+
+        Do While Not streamReader.EndOfStream
+            splitLine = streamReader.ReadLine.ToUpper().Split(",")
+
+            Dim FilePropertyChangesItem As New FilePropertyChanges
+            FilePropertyChangesItem.type_old = splitLine(0)
+            FilePropertyChangesItem.type_new = splitLine(3)
+            FilePropertyChangesItem.code_old = splitLine(1)
+            FilePropertyChangesItem.code_new = splitLine(4)
+            FilePropertyChangesItem.desc_old = splitLine(2)
+            FilePropertyChangesItem.desc_new = splitLine(5)
+
+            FilePropertyChangesList.Add(FilePropertyChangesItem.code_old, FilePropertyChangesItem)
+
+        Loop
+
+        streamReader.Close()
+
+        Return FilePropertyChangesList
+
+    End Function
+
+    Private Sub FindFiles_UpdateOrRename(poCmd As EdmCmd, ByRef ppoData As System.Array, eVault As EdmVault5, csvPath As String, rename As Boolean)
+
+        Dim eFolder As IEdmFolder6 = Nothing
+
+        Try
+            Dim processedList As New List(Of String)
+            Dim count As Integer = 0
+            Dim success As Boolean = True
+
+            Dim docMgrKey As String = "CONSTRUCCIONESMECANICASALCAYSL:swdocmgr_general-11785-02051-00064-17409-08723-34307-00007-06120-12153-28675-47147-36320-07780-58580-20483-13007-16485-58752-40693-63371-17264-24369-15628-19769-18769-03413-09485-14653-19733-05429-01293-09529-01293-01357-03377-25861-12621-14337-27236-56922-59590-25690-25696-1026"
+            Dim classFactory As SwDMClassFactory = TryCast(Activator.CreateInstance(Type.GetTypeFromProgID("SwDocumentMgr.SwDMClassFactory")), SwDMClassFactory)
+            Dim swDmApp As SwDMApplication4 = classFactory.GetApplication(docMgrKey)
+
+            Dim filePropertyChangesList As Dictionary(Of String, FilePropertyChanges) = ReadCSVtoFileProperty(csvPath)
+
+            If swDmApp IsNot Nothing Then
+
+                For Each folderData In ppoData
+
+                    If processedList.Contains(folderData.mlObjectID2) = False Then
+
+                        processedList.Add(folderData.mlObjectID2)
+
+                        eFolder = eVault.GetObject(EdmObjectType.EdmObject_Folder, folderData.mlObjectID2)
+
+                        If eFolder IsNot Nothing Then
+                            TraverseFolderForFiles_UpdateOrRename(swDmApp, count, eFolder, filePropertyChangesList, rename)
+                        Else
+                            WriteToLog(True, $"Unable to get folder object with ID: {folderData.mlObjectID2}")
+                        End If
+
+                        eFolder = Nothing
+                    End If
+                Next
+
+                MsgBox($"Successfully processed {count} files", MsgBoxStyle.Information, "BatchPDM")
+
+            End If
+
+        Catch ex As System.Exception
+            Dim st As New StackTrace(True)
+            st = New StackTrace(ex, True)
+
+            MsgBox($"The following error occurred:{vbNewLine}{vbNewLine}{ex.Message} (Line: {st.GetFrame(0).GetFileLineNumber()})", MsgBoxStyle.Exclamation, My.Application.Info.AssemblyName)
+
+        End Try
+
+    End Sub
+
+    Sub TraverseFolderForFiles_UpdateOrRename(ByRef swDmApp As SwDMApplication4, ByRef count As Integer, eFolder As IEdmFolder5, filePropertyChangesList As Dictionary(Of String, FilePropertyChanges), rename As Boolean)
+
+        Const TYPE_PROP As String = "Tipo"
+        Const DESC_PROP As String = "Descripcion"
+
+        If eFolder IsNot Nothing Then
+
+            Dim pdmFilePos As IEdmPos5
+            pdmFilePos = eFolder.GetFirstFilePosition()
+
+            Dim folderName As String = eFolder.Name
+
+            Dim filePropertyChanges As FilePropertyChanges
+            Dim updateRequred As Boolean = False
+
+
+            If filePropertyChangesList.Keys.Contains(folderName) = True Then
+                filePropertyChanges = filePropertyChangesList.Item(folderName)
+
+                If filePropertyChanges.type_old <> filePropertyChanges.type_new Or
+                    filePropertyChanges.code_old <> filePropertyChanges.code_new Or
+                    filePropertyChanges.desc_old <> filePropertyChanges.desc_new Then
+
+                    updateRequred = True
+
+                End If
+            End If
+
+            If updateRequred = True Then
+                While pdmFilePos.IsNull = False
+                    Dim eFile As IEdmFile5
+                    eFile = eFolder.GetNextFile(pdmFilePos)
+
+                    If eFile IsNot Nothing Then
+
+                        Dim fileExt As String = Strings.Right(eFile.Name, 6)
+
+                        Dim fileName As String = eFile.Name
+                        fileName = Strings.Left(fileName, InStr(fileName, ".") - 1)
+
+                        If (eFile.Name.Contains(" ") = True) Then
+                            Dim fileNameSplit() As String
+                            fileNameSplit = folderName.Split(" ")
+                            fileName = fileNameSplit(0)
+                        End If
+
+                        If fileName.ToLower <> folderName.ToLower Then
+                            Continue While
+                        End If
+
+                        If eFile.IsLocked = True & rename = False Then
+                            If eFile.LockedByUser.Name.ToLower() = "admin" Then
+
+                                Dim result As SwDmDocumentOpenError
+                                Dim docType As SwDmDocumentType
+
+                                If fileExt.ToLower() = "sldasm" Then
+                                    docType = SwDmDocumentType.swDmDocumentAssembly
+                                ElseIf fileExt.ToLower() = "sldprt" Then
+                                    docType = SwDmDocumentType.swDmDocumentPart
+                                ElseIf fileExt.ToLower() = "slddrw" Then
+                                    docType = SwDmDocumentType.swDmDocumentDrawing
+                                End If
+
+                                Dim swDoc As SwDMDocument10 = swDmApp.GetDocument(eFile.LockPath, docType, False, result)
+
+                                If swDoc Is Nothing Then
+                                    WriteToLog(True, $"swDoc is nothing: {eFile.GetLocalPath(eFolder.ID)}")
+
+                                    Continue While
+                                End If
+
+                                If result <> SwDmDocumentOpenError.swDmDocumentOpenErrorNone Then
+                                    WriteToLog(True, $"Error opening file: {result.ToString} ({eFile.Name})")
+                                End If
+
+                                Dim swConfig As SwDMConfiguration10 = Nothing
+
+                                Try
+                                    swConfig = swDoc.ConfigurationManager.GetConfigurationByName("Predeterminado")
+                                Catch
+                                End Try
+
+                                Dim descPropExists As Boolean = False
+                                Dim descPropVal As String = ""
+                                Dim typePropExists As Boolean = False
+                                Dim typePropVal As String = ""
+                                Dim linkedTo_Unused As String = ""
+
+                                If swConfig IsNot Nothing Then
+
+                                    descPropExists = False
+                                    typePropExists = False
+
+                                    Dim propNames As Object = swConfig.GetCustomPropertyNames
+
+                                    For Each propName In propNames
+
+                                        If propName = DESC_PROP Then
+                                            descPropExists = True
+                                            descPropVal = swConfig.GetCustomPropertyValues(DESC_PROP, SwDmCustomInfoType.swDmCustomInfoText, linkedTo_Unused)
+                                        End If
+
+                                        If propName = TYPE_PROP Then
+                                            typePropExists = True
+                                            typePropVal = swConfig.GetCustomPropertyValues(TYPE_PROP, SwDmCustomInfoType.swDmCustomInfoText, linkedTo_Unused)
+                                        End If
+                                    Next
+
+                                    If descPropExists = False Then
+                                        swConfig.AddCustomProperty(DESC_PROP, SwDmCustomInfoType.swDmCustomInfoText, filePropertyChanges.desc_new)
+                                        swDoc.Save()
+
+                                        WriteToLog(False, $"{folderName}, Success adding Descripcion property: {filePropertyChanges.desc_new} ({eFile.Name})")
+                                    ElseIf descPropExists = True Then
+                                        swConfig.SetCustomProperty(DESC_PROP, filePropertyChanges.desc_new)
+                                        swDoc.Save()
+
+                                        WriteToLog(False, $"{folderName}, Success setting Descripcion property: {filePropertyChanges.desc_new} ({eFile.Name})")
+                                    End If
+
+                                    If typePropExists = False Then
+                                        swConfig.AddCustomProperty(TYPE_PROP, SwDmCustomInfoType.swDmCustomInfoText, filePropertyChanges.type_new)
+                                        swDoc.Save()
+
+                                        WriteToLog(False, $"{folderName}, Success adding Tipo property: {filePropertyChanges.type_new} ({eFile.Name})")
+                                    ElseIf typePropExists = True Then
+                                        swConfig.SetCustomProperty(TYPE_PROP, filePropertyChanges.type_new)
+                                        swDoc.Save()
+
+                                        WriteToLog(False, $"{folderName}, Success setting Tipo property: {filePropertyChanges.type_new} ({eFile.Name})")
+                                    End If
+
+                                Else
+                                    Dim configs As Object = swDoc.ConfigurationManager.GetConfigurationNames
+
+                                    Dim firstConfig As Boolean = True
+
+                                    For Each config In configs
+
+                                        descPropExists = False
+                                        descPropVal = ""
+                                        typePropExists = False
+                                        typePropVal = ""
+
+                                        Try
+                                            swConfig = swDoc.ConfigurationManager.GetConfigurationByName(config)
+                                        Catch
+                                        End Try
+
+                                        If swConfig IsNot Nothing Then
+
+                                            Dim propNames As Object = swConfig.GetCustomPropertyNames
+
+                                            For Each propName In propNames
+
+                                                If propName = DESC_PROP Then
+                                                    descPropExists = True
+                                                    descPropVal = swConfig.GetCustomPropertyValues(DESC_PROP, SwDmCustomInfoType.swDmCustomInfoText, linkedTo_Unused)
+                                                End If
+
+                                                If propName = TYPE_PROP Then
+                                                    typePropExists = True
+                                                    typePropVal = swConfig.GetCustomPropertyValues(TYPE_PROP, SwDmCustomInfoType.swDmCustomInfoText, linkedTo_Unused)
+                                                End If
+                                            Next
+
+                                            If descPropExists = False Then
+                                                swConfig.AddCustomProperty(DESC_PROP, SwDmCustomInfoType.swDmCustomInfoText, filePropertyChanges.desc_new)
+                                                swDoc.Save()
+
+                                                If firstConfig = True Then WriteToLog(False, $"{folderName}, Success adding Descripcion Property: {filePropertyChanges.desc_new} ({eFile.Name})")
+                                            ElseIf descPropExists = True Then
+                                                swConfig.SetCustomProperty(DESC_PROP, filePropertyChanges.desc_new)
+                                                swDoc.Save()
+
+                                                If firstConfig = True Then WriteToLog(False, $"{folderName}, Success setting Descripcion Property {filePropertyChanges.desc_new} ({eFile.Name})")
+                                            End If
+
+                                            If typePropExists = False Then
+                                                swConfig.AddCustomProperty(TYPE_PROP, SwDmCustomInfoType.swDmCustomInfoText, filePropertyChanges.type_new)
+                                                swDoc.Save()
+
+                                                If firstConfig = True Then WriteToLog(False, $"{folderName}, Success adding Tipo Property {filePropertyChanges.type_new} ({eFile.Name})")
+                                            ElseIf typePropExists = True Then
+                                                swConfig.SetCustomProperty(TYPE_PROP, filePropertyChanges.type_new)
+                                                swDoc.Save()
+
+                                                If firstConfig = True Then WriteToLog(False, $"{folderName}, Success setting Tipo Property {filePropertyChanges.type_new} ({eFile.Name})")
+                                            End If
+
+                                        End If
+
+                                        firstConfig = False
+
+                                    Next
+
+                                    swDoc.Save()
+                                End If
+
+                                swDoc.CloseDoc()
+
+                                count += 1
+
+                            End If
+                        ElseIf eFile.IsLocked = False & rename = True Then
+                            Dim newFilename As String = $"{filePropertyChanges.code_new}.{fileExt}"
+
+                            Try
+                                eFile.Rename(0, newFilename)
+                                WriteToLog(False, $"{folderName}, Success renaming file {eFile.Name} to {newFilename}")
+                            Catch ex As Exception
+                                WriteToLog(True, $"Error renaming file: {ex.Message} ({eFile.Name})")
+                            End Try
+                        End If
+                    End If
+
+                End While
+            End If
+
+            Dim pdmSubFolderPos As IEdmPos5
+            pdmSubFolderPos = eFolder.GetFirstSubFolderPosition()
+
+            While Not pdmSubFolderPos.IsNull
+                Dim pdmSubFolder As IEdmFolder5
+                pdmSubFolder = eFolder.GetNextSubFolder(pdmSubFolderPos)
+
+                TraverseFolderForFiles_UpdateOrRename(swDmApp, count, pdmSubFolder, filePropertyChangesList, rename)
+            End While
+
+        End If
+
+    End Sub
+
+    Private Sub FindNonApproved(poCmd As EdmCmd, ByRef ppoData As System.Array, eVault As EdmVault5)
+
+        Dim eFolder As IEdmFolder6 = Nothing
+
+        Dim swApp As SldWorks = StartSW(True)
+
+        Dim processedList As New List(Of String)
+        Dim count As Integer = 0
+        Dim success As Boolean = True
+
+        For Each folderData In ppoData
+
+            If processedList.Contains(folderData.mlObjectID2) = False Then
+
+                processedList.Add(folderData.mlObjectID2)
+
+                eFolder = eVault.GetObject(EdmObjectType.EdmObject_Folder, folderData.mlObjectID2)
+
+                If eFolder IsNot Nothing Then
+                    TraverseFolderForNonApproved(swApp, count, eFolder)
+                Else
+                    WriteToLog(True, $"Unable To Get folder Object With ID {folderData.mlObjectID2}")
+                End If
+
+                eFolder = Nothing
+            End If
+        Next
+
+        CloseSW(swApp)
+
+        MsgBox($"Completed mass unit check On {count} files", MsgBoxStyle.Information, "BatchPDM")
+
+        'Try
+        'Catch ex As System.Exception
+        '    Dim st As New StackTrace(True)
+        '    st = New StackTrace(ex, True)
+
+        '    MsgBox($"The following Error occurred{vbNewLine}{vbNewLine}{ex.Message} (Line {st.GetFrame(0).GetFileLineNumber()})", MsgBoxStyle.Exclamation, My.Application.Info.AssemblyName)
+
+        'End Try
+
+    End Sub
+
+    Sub TraverseFolderForNonApproved(ByRef swApp As SldWorks, ByRef count As Integer, eFolder As IEdmFolder5)
+
+        If eFolder IsNot Nothing Then
+
+            Dim splitFolderName() As String = Split(eFolder.Name, "-")
+
+            If splitFolderName(0).Length = 3 Then
+
+                Dim pdmFilePos As IEdmPos5
+                pdmFilePos = eFolder.GetFirstFilePosition()
+
+                While pdmFilePos.IsNull = False
+
+                    Try
+                        Dim eFile As IEdmFile5
+                        eFile = eFolder.GetNextFile(pdmFilePos)
+
+                        If eFile IsNot Nothing Then
+
+                            Dim ext As String = Strings.Right(eFile.Name, 6).ToLower()
+
+                            If ext = "slddrw" Or ext = "sldasm" Or ext = "sldprt" Then
+
+                                If eFile.CurrentState.Name = "Diseño Librería" Then
+                                    WriteToLog(False, $"Not approved {eFile.Name}")
+                                End If
+
+                            End If
+
+                        End If
+
+                    Catch ex As Exception
+                        Dim st As New StackTrace(True)
+                        st = New StackTrace(ex, True)
+
+                        WriteToLog(True, $"The following Error occurred checking approval state{vbNewLine}{vbNewLine}{ex.Message} (Line {st.GetFrame(0).GetFileLineNumber()})")
+
+                    End Try
+
+                End While
+
+                Dim pdmSubFolderPos As IEdmPos5
+                pdmSubFolderPos = eFolder.GetFirstSubFolderPosition()
+
+                While Not pdmSubFolderPos.IsNull
+                    Dim pdmSubFolder As IEdmFolder5
+                    pdmSubFolder = eFolder.GetNextSubFolder(pdmSubFolderPos)
+
+                    TraverseFolderForNonApproved(swApp, count, pdmSubFolder)
+                End While
+
+            End If
+
+        End If
+
+
+    End Sub
+
+    Private Sub CheckAssyUnits(ByRef poCmd As EdmCmd, ByRef ppoData As Array, csvPath As String)
+
+        Try
+            Dim swApp As SldWorks = StartSW()
+
+            If swApp IsNot Nothing Then
+
+                Dim csvList As List(Of String) = ReadCSV(csvPath)
+
+                WriteToLog(False, $"Read TXT file {csvPath} ({csvList.Count} files)")
+
+                Dim errors As Integer
+                Dim warnings As Integer
+
+                Dim count As Integer = 0
+
+                For Each strFileInfo In csvList
+
+                    'Dim fileInfo() As String = strFileInfo.Split(",")
+                    'Dim filePath As String = IO.Path.Combine(fileInfo(6), $"{fileInfo(0)}.sldprt")
+
+                    Dim swFile As ModelDoc2 = swApp.OpenDoc6(strFileInfo, swDocumentTypes_e.swDocASSEMBLY, swOpenDocOptions_e.swOpenDocOptions_Silent, "", errors, warnings)
+
+                    If errors = 0 And swFile IsNot Nothing Then
+
+                        Dim massUnits As Integer = swFile.Extension.GetUserPreferenceInteger(swUserPreferenceIntegerValue_e.swUnitsMassPropMass, swUserPreferenceOption_e.swDetailingNoOptionSpecified)
+
+                        If massUnits <> 3 Then
+                            WriteToLog(False, $"Units Not Set To kg {strFileInfo}")
+                        End If
+
+                        swApp.QuitDoc(swFile.GetPathName)
+
+                        count += 1
+
+                    Else
+                        WriteToLog(True, $"Open Error {errors} {strFileInfo}")
+                    End If
+
+                Next
+
+            End If
+
+            CloseSW(swApp)
+
+        Catch ex As Exception
+            MsgBox(ex.Message, MsgBoxStyle.Critical)
+        End Try
+
+        MsgBox("Done Assy Unit Check", MsgBoxStyle.Information)
 
     End Sub
 
@@ -154,7 +709,7 @@ Public Class BatchPDM
                     If eFolder IsNot Nothing Then
                         TraverseFolderForAssys_GetLatest(eFolder)
                     Else
-                        WriteToLog(True, $"Unable to get folder object with ID: {folderData.mlObjectID2}")
+                        WriteToLog(True, $"Unable To Get folder Object With ID {folderData.mlObjectID2}")
                     End If
 
                     eFolder = Nothing
@@ -167,7 +722,7 @@ Public Class BatchPDM
             Dim st As New StackTrace(True)
             st = New StackTrace(ex, True)
 
-            MsgBox($"The following error occurred:{vbNewLine}{vbNewLine}{ex.Message} (Line: {st.GetFrame(0).GetFileLineNumber()})", MsgBoxStyle.Exclamation, My.Application.Info.AssemblyName)
+            MsgBox($"The following Error occurred{vbNewLine}{vbNewLine}{ex.Message} (Line {st.GetFrame(0).GetFileLineNumber()})", MsgBoxStyle.Exclamation, My.Application.Info.AssemblyName)
 
         End Try
 
@@ -199,7 +754,7 @@ Public Class BatchPDM
                         Dim st As New StackTrace(True)
                         st = New StackTrace(ex, True)
 
-                        WriteToLog(True, $"The following error occurred getting latest:{vbNewLine}{vbNewLine}{ex.Message} (Line: {st.GetFrame(0).GetFileLineNumber()})")
+                        WriteToLog(True, $"The following Error occurred getting latest{vbNewLine}{vbNewLine}{ex.Message} (Line {st.GetFrame(0).GetFileLineNumber()})")
 
                     End Try
 
@@ -243,7 +798,7 @@ Public Class BatchPDM
                 If eFolder IsNot Nothing Then
                     TraverseFolderForParts_Grams(swApp, count, eFolder)
                 Else
-                    WriteToLog(True, $"Unable to get folder object with ID: {folderData.mlObjectID2}")
+                    WriteToLog(True, $"Unable To Get folder Object With ID {folderData.mlObjectID2}")
                 End If
 
                 eFolder = Nothing
@@ -252,14 +807,14 @@ Public Class BatchPDM
 
         CloseSW(swApp)
 
-        MsgBox($"Completed mass unit check on {count} files", MsgBoxStyle.Information, "BatchPDM")
+        MsgBox($"Completed mass unit check On {count} files", MsgBoxStyle.Information, "BatchPDM")
 
         'Try
         'Catch ex As System.Exception
         '    Dim st As New StackTrace(True)
         '    st = New StackTrace(ex, True)
 
-        '    MsgBox($"The following error occurred:{vbNewLine}{vbNewLine}{ex.Message} (Line: {st.GetFrame(0).GetFileLineNumber()})", MsgBoxStyle.Exclamation, My.Application.Info.AssemblyName)
+        '    MsgBox($"The following Error occurred{vbNewLine}{vbNewLine}{ex.Message} (Line {st.GetFrame(0).GetFileLineNumber()})", MsgBoxStyle.Exclamation, My.Application.Info.AssemblyName)
 
         'End Try
 
@@ -295,7 +850,7 @@ Public Class BatchPDM
 
                                 If swApp Is Nothing Then
                                     swApp = StartSW(True)
-                                    WriteToLog(False, $"Restart solidworks due to crash")
+                                    WriteToLog(False, $"Restart solidworks due To crash")
                                 End If
 
                                 Dim swFile As ModelDoc2
@@ -309,7 +864,7 @@ Public Class BatchPDM
                                     Dim massUnits As Integer = swFile.Extension.GetUserPreferenceInteger(swUserPreferenceIntegerValue_e.swUnitsMassPropMass, swUserPreferenceOption_e.swDetailingNoOptionSpecified)
 
                                     If massUnits <> 3 Then
-                                        WriteToLog(False, $"Units not set to kg: {filePath}")
+                                        WriteToLog(False, $"Units Not Set To kg {filePath}")
                                     End If
 
                                     swApp.QuitDoc(swFile.GetPathName)
@@ -318,15 +873,15 @@ Public Class BatchPDM
 
                                     'If count Mod RESTARTSWCOUNT = 0 Then
 
-                                    '    WriteToLog(False, $"Restart solidworks: {count} files processed")
+                                    '    WriteToLog(False, $"Restart solidworks {count} files processed")
                                     '    CloseSW(swApp)
                                     '    swApp = StartSW(True)
 
-                                    '    If swApp Is Nothing Then WriteToLog(True, $"Batch did not complete successfully")
+                                    '    If swApp Is Nothing Then WriteToLog(True, $"Batch did Not complete successfully")
 
                                     'End If
                                 Else
-                                    WriteToLog(True, $"Open error {errors}: {filePath}")
+                                    WriteToLog(True, $"Open Error {errors} {filePath}")
                                 End If
 
                             End If
@@ -336,7 +891,7 @@ Public Class BatchPDM
                         Dim st As New StackTrace(True)
                         st = New StackTrace(ex, True)
 
-                        WriteToLog(True, $"The following error occurred checking mass units:{vbNewLine}{vbNewLine}{ex.Message} (Line: {st.GetFrame(0).GetFileLineNumber()})")
+                        WriteToLog(True, $"The following Error occurred checking mass units{vbNewLine}{vbNewLine}{ex.Message} (Line {st.GetFrame(0).GetFileLineNumber()})")
 
                     End Try
 
@@ -380,7 +935,7 @@ Public Class BatchPDM
                 If eFolder IsNot Nothing Then
                     TraverseFolderForAssys_Macro(swApp, count, eFolder)
                 Else
-                    WriteToLog(True, $"Unable to get folder object with ID: {folderData.mlObjectID2}")
+                    WriteToLog(True, $"Unable To Get folder Object With ID {folderData.mlObjectID2}")
                 End If
 
                 eFolder = Nothing
@@ -389,14 +944,14 @@ Public Class BatchPDM
 
         CloseSW(swApp)
 
-        MsgBox($"Completed macro runner check on {count} files", MsgBoxStyle.Information, "BatchPDM")
+        MsgBox($"Completed macro runner check On {count} files", MsgBoxStyle.Information, "BatchPDM")
 
         'Try
         'Catch ex As System.Exception
         '    Dim st As New StackTrace(True)
         '    st = New StackTrace(ex, True)
 
-        '    MsgBox($"The following error occurred:{vbNewLine}{vbNewLine}{ex.Message} (Line: {st.GetFrame(0).GetFileLineNumber()})", MsgBoxStyle.Exclamation, My.Application.Info.AssemblyName)
+        '    MsgBox($"The following Error occurred{vbNewLine}{vbNewLine}{ex.Message} (Line {st.GetFrame(0).GetFileLineNumber()})", MsgBoxStyle.Exclamation, My.Application.Info.AssemblyName)
 
         'End Try
 
@@ -426,7 +981,7 @@ Public Class BatchPDM
                                 eFile.GetFileCopy(0)
 
                                 Dim filePath As String = eFile.GetLocalPath(eFolder.ID)
-                                'WriteToLog(False, $"check file: {filePath}")
+                                'WriteToLog(False, $"check file {filePath}")
 
                                 Dim errors As Integer
                                 Dim warnings As Integer
@@ -453,16 +1008,16 @@ Public Class BatchPDM
 
                                     If count Mod RESTARTSWCOUNT = 0 Then
 
-                                        WriteToLog(False, $"Restart solidworks: {count} files processed")
+                                        WriteToLog(False, $"Restart solidworks {count} files processed")
                                         CloseSW(swApp)
                                         swApp = StartSW(True)
                                         swApp.SetUserPreferenceToggle(swUserPreferenceToggle_e.swUserEnableFreezeBar, True)
 
-                                        If swApp Is Nothing Then WriteToLog(True, $"Batch did not complete successfully")
+                                        If swApp Is Nothing Then WriteToLog(True, $"Batch did Not complete successfully")
 
                                     End If
                                 Else
-                                    WriteToLog(True, $"Open error {errors}: {filePath}")
+                                    WriteToLog(True, $"Open Error {errors} {filePath}")
                                 End If
 
                                 'If eFile.CurrentRevision = "" Then
@@ -470,9 +1025,9 @@ Public Class BatchPDM
 
                                 '    count += 1
 
-                                '    WriteToLog(False, $"Set Revision: {eFile.Name}")
+                                '    WriteToLog(False, $"Set Revision {eFile.Name}")
                                 'Else
-                                '    WriteToLog(False, $"Exisisting revision {eFile.Name}: {eFile.CurrentRevision}")
+                                '    WriteToLog(False, $"Exisisting revision {eFile.Name} {eFile.CurrentRevision}")
                                 'End If
 
                             End If
@@ -482,7 +1037,7 @@ Public Class BatchPDM
                         Dim st As New StackTrace(True)
                         st = New StackTrace(ex, True)
 
-                        WriteToLog(True, $"The following error occurred removing macro:{vbNewLine}{vbNewLine}{ex.Message} (Line: {st.GetFrame(0).GetFileLineNumber()})")
+                        WriteToLog(True, $"The following Error occurred removing macro{vbNewLine}{vbNewLine}{ex.Message} (Line {st.GetFrame(0).GetFileLineNumber()})")
 
                     End Try
 
@@ -505,46 +1060,48 @@ Public Class BatchPDM
 
     End Sub
 
-    Private Sub SetPartRevisions(poCmd As EdmCmd, ByRef ppoData As System.Array, eVault As EdmVault5)
+    Private Sub ApproveFiles(poCmd As EdmCmd, ByRef ppoData As System.Array, eVault As EdmVault5)
 
         Dim eFolder As IEdmFolder6 = Nothing
 
-        Try
-            Dim processedList As New List(Of String)
-            Dim count As Integer = 0
-            Dim success As Boolean = True
+        'Try
+        Dim processedList As New List(Of String)
+        Dim count As Integer = 0
+        Dim success As Boolean = True
 
-            For Each folderData In ppoData
+        For Each folderData In ppoData
 
-                If processedList.Contains(folderData.mlObjectID2) = False Then
+            If processedList.Contains(folderData.mlObjectID2) = False Then
 
-                    processedList.Add(folderData.mlObjectID2)
+                processedList.Add(folderData.mlObjectID2)
 
-                    eFolder = eVault.GetObject(EdmObjectType.EdmObject_Folder, folderData.mlObjectID2)
+                eFolder = eVault.GetObject(EdmObjectType.EdmObject_Folder, folderData.mlObjectID2)
 
-                    If eFolder IsNot Nothing Then
-                        TraverseFolderForParts_Rev(count, eFolder)
-                    Else
-                        WriteToLog(True, $"Unable to get folder object with ID: {folderData.mlObjectID2}")
-                    End If
-
-                    eFolder = Nothing
+                If eFolder IsNot Nothing Then
+                    TraverseFolder_Approve(count, eFolder)
+                Else
+                    WriteToLog(True, $"Unable To Get folder Object With ID {folderData.mlObjectID2}")
                 End If
-            Next
 
-            MsgBox($"Successfully incremented {count} file revisions", MsgBoxStyle.Information, "BatchPDM")
+                eFolder = Nothing
+            End If
+        Next
 
-        Catch ex As System.Exception
-            Dim st As New StackTrace(True)
-            st = New StackTrace(ex, True)
+        MsgBox($"Successfully approved {count} files", MsgBoxStyle.Information, "BatchPDM")
 
-            MsgBox($"The following error occurred:{vbNewLine}{vbNewLine}{ex.Message} (Line: {st.GetFrame(0).GetFileLineNumber()})", MsgBoxStyle.Exclamation, My.Application.Info.AssemblyName)
+        'Catch ex As System.Exception
+        '    Dim st As New StackTrace(True)
+        '    st = New StackTrace(ex, True)
 
-        End Try
+        '    'MsgBox($"The following Error occurred{vbNewLine}{vbNewLine}{ex.Message} (Line {st.GetFrame(0).GetFileLineNumber()})", MsgBoxStyle.Exclamation, My.Application.Info.AssemblyName)
+
+
+
+        'End Try
 
     End Sub
 
-    Sub TraverseFolderForParts_Rev(ByRef count As Integer, eFolder As IEdmFolder5)
+    Sub TraverseFolder_Approve(ByRef count As Integer, eFolder As IEdmFolder5)
 
         If eFolder IsNot Nothing Then
 
@@ -561,17 +1118,23 @@ Public Class BatchPDM
                     eFile = eFolder.GetNextFile(pdmFilePos)
 
                     If eFile IsNot Nothing Then
+                        Dim ext As String = Strings.Right(eFile.Name, 6).ToLower()
 
-                        If Strings.Right(eFile.Name, 6).ToLower() = "sldprt" Then
+                        If ext = "slddrw" Or ext = "sldasm" Or ext = "sldprt" Then
 
-                            If eFile.CurrentRevision = "" Then
-                                eFile.IncrementRevision(0, eFolder.ID, "REVISION A")
+                            If eFile.CurrentState.Name = "Diseño" Then
+                                Try
+                                    'eFile.IncrementRevision(0, eFolder.ID, "REVISION A")
+                                    eFile.ChangeState("Aprobado", eFolder.ID, "REVISION A", 0)
+                                Catch ex As Exception
+                                    WriteToLog(True, $"The following Error occurred chaning state Of {eFile.Name} ({ex.Message})")
+                                End Try
 
                                 count += 1
 
-                                WriteToLog(False, $"Set Revision: {eFile.Name}")
-                            Else
-                                WriteToLog(False, $"Exisisting revision {eFile.Name}: {eFile.CurrentRevision}")
+                                WriteToLog(False, $"Approved {eFile.Name}")
+                                'Else
+                                '    WriteToLog(False, $"Exisisting revision {eFile.Name} {eFile.CurrentRevision}")
                             End If
 
                         End If
@@ -586,11 +1149,11 @@ Public Class BatchPDM
                     Dim pdmSubFolder As IEdmFolder5
                     pdmSubFolder = eFolder.GetNextSubFolder(pdmSubFolderPos)
 
-                    TraverseFolderForParts_Rev(count, pdmSubFolder)
+                    TraverseFolder_Approve(count, pdmSubFolder)
                 End While
 
             Else
-                WriteToLog(False, $"Skipping folder: {eFolder.Name}")
+                WriteToLog(False, $"Skipping folder {eFolder.Name}")
             End If
 
         End If
@@ -608,7 +1171,7 @@ Public Class BatchPDM
 
                 Dim csvList As List(Of String) = ReadCSV(csvPath)
 
-                WriteToLog(False, $"Read CSV file: {csvPath} ({csvList.Count} files)")
+                WriteToLog(False, $"Read CSV file {csvPath} ({csvList.Count} files)")
 
                 Dim errors As Integer
                 Dim warnings As Integer
@@ -633,22 +1196,22 @@ Public Class BatchPDM
 
                         swApp.QuitDoc(swFile.GetPathName)
 
-                        WriteToLog(False, $"Set All Properties: {fileInfo(0)}")
+                        WriteToLog(False, $"Set All Properties {fileInfo(0)}")
 
                         count += 1
 
                         If count Mod RESTARTSWCOUNT = 0 Then
 
-                            WriteToLog(False, $"Restart solidworks: {count} files processed")
+                            WriteToLog(False, $"Restart solidworks {count} files processed")
                             CloseSW(swApp)
                             swApp = StartSW()
                             swApp.SetUserPreferenceToggle(swUserPreferenceToggle_e.swUserEnableFreezeBar, True)
 
-                            If swApp Is Nothing Then WriteToLog(True, $"Batch did not complete successfully")
+                            If swApp Is Nothing Then WriteToLog(True, $"Batch did Not complete successfully")
 
                         End If
                     Else
-                        WriteToLog(True, $"Open error {errors}: {filePath}")
+                        WriteToLog(True, $"Open Error {errors} {filePath}")
                     End If
 
                 Next
@@ -722,7 +1285,7 @@ Public Class BatchPDM
 
             If setMaterialSuccess = False Then
 
-                Dim materialListPath As String = "C:\Users\administrador\Desktop\Macros\MaterialsList.txt"
+                Dim materialListPath As String = "C\Users\administrador\Desktop\Macros\MaterialsList.txt"
 
                 Dim materialListReader As New StreamReader(materialListPath)
 
@@ -762,7 +1325,7 @@ Public Class BatchPDM
 
         swPropMgr.Add3("Material", swCustomInfoType_e.swCustomInfoText, """" & "SW-Material@" & swFileName & """", 1)
         swPropMgr.Add3("Weight", swCustomInfoType_e.swCustomInfoText, """" & "SW-Masa@" & swFileName & """", 1)
-        swPropMgr.Add3("Código", swCustomInfoType_e.swCustomInfoText, "$PRP:" & """" & "SW-Nombre del archivo(File Name)" & """", 1)
+        swPropMgr.Add3("Código", swCustomInfoType_e.swCustomInfoText, "$PRP" & """" & "SW-Nombre del archivo(File Name)" & """", 1)
 
         Try
             swPropMgr.Delete("Description")
@@ -813,7 +1376,7 @@ Public Class BatchPDM
 
             Dim csvList As List(Of String) = ReadCSV(csvPath)
 
-            WriteToLog(False, $"Read CSV file: {csvPath} ({csvList.Count} files)")
+            WriteToLog(False, $"Read CSV file {csvPath} ({csvList.Count} files)")
 
             Dim errors As Integer
             Dim warnings As Integer
@@ -837,22 +1400,22 @@ Public Class BatchPDM
 
                     swApp.QuitDoc(swFile.GetPathName)
 
-                    WriteToLog(False, $"Freeze Bar Updated: {fileInfo(0)}")
+                    WriteToLog(False, $"Freeze Bar Updated {fileInfo(0)}")
 
                     count += 1
 
                     If count Mod RESTARTSWCOUNT = 0 Then
 
-                        WriteToLog(False, $"Restart solidworks: {count} files processed")
+                        WriteToLog(False, $"Restart solidworks {count} files processed")
                         CloseSW(swApp)
                         swApp = StartSW()
                         swApp.SetUserPreferenceToggle(swUserPreferenceToggle_e.swUserEnableFreezeBar, True)
 
-                        If swApp Is Nothing Then WriteToLog(True, $"Batch did not complete successfully")
+                        If swApp Is Nothing Then WriteToLog(True, $"Batch did Not complete successfully")
 
                     End If
                 Else
-                    WriteToLog(True, $"Open error {errors}: {filePath}")
+                    WriteToLog(True, $"Open Error {errors} {filePath}")
                 End If
 
             Next
@@ -886,7 +1449,7 @@ Public Class BatchPDM
                 eFile.LockFile(eFolder.ID, 0)
 
             Catch ex As Exception
-                WriteToLog(True, $"Checkout error {ex.Message}: {filePath}")
+                WriteToLog(True, $"Checkout Error {ex.Message} {filePath}")
             End Try
 
         Next
@@ -899,6 +1462,38 @@ Public Class BatchPDM
 
         Do While Not streamReader.EndOfStream
             csvList.Add(streamReader.ReadLine)
+        Loop
+
+        streamReader.Close()
+
+        Return csvList
+
+    End Function
+
+
+    ''' <summary>
+    ''' Key = Folder Name, Value = Unique ID
+    ''' </summary>
+    ''' <param name="csvPath"></param>
+    ''' <returns></returns>
+    Private Function ReadCSVtoDict(csvPath As String) As Dictionary(Of String, String)
+
+        Dim streamReader As New StreamReader(csvPath)
+        Dim csvList As New Dictionary(Of String, String)
+        Dim splitLine() As String
+
+        Do While Not streamReader.EndOfStream
+            splitLine = streamReader.ReadLine.Split(",")
+
+            If (csvList.Keys.Contains(splitLine(1)) = True) Then
+                csvList.Item(splitLine(1)) = splitLine(0)
+            Else
+                csvList.Add(splitLine(1), splitLine(0))
+            End If
+            'Try
+            'Catch ex As Exception
+            '    WriteToLog(True, $"Duplicate folder name In csv {splitLine(1)}")
+            'End Try
         Loop
 
         streamReader.Close()
@@ -938,7 +1533,7 @@ Public Class BatchPDM
 
     End Sub
 
-    Private Sub FindFiles(poCmd As EdmCmd, ByRef ppoData As System.Array, eVault As EdmVault5, folderLetter As String, findReadOnly As Boolean)
+    Private Sub FindFiles(poCmd As EdmCmd, ByRef ppoData As System.Array, eVault As EdmVault5, folderLetter As String, Optional findReadOnly As Boolean = False)
 
         Dim eFolder As IEdmFolder6 = Nothing
 
@@ -948,7 +1543,7 @@ Public Class BatchPDM
             Dim success As Boolean = True
             Dim swApp As SldWorks = StartSW(folderLetter:=count)
 
-            Dim docMgrKey As String = "CONSTRUCCIONESMECANICASALCAYSL:swdocmgr_general-11785-02051-00064-17409-08723-34307-00007-06120-12153-28675-47147-36320-07780-58580-20483-13007-16485-58752-40693-63371-17264-24369-15628-19769-18769-03413-09485-14653-19733-05429-01293-09529-01293-01357-03377-25861-12621-14337-27236-56922-59590-25690-25696-1026"
+            Dim docMgrKey As String = "CONSTRUCCIONESMECANICASALCAYSLswdocmgr_general-11785 - 2051 - 64 - 17409 - 8723 - 34307 - 7 - 6120 - 12153 - 28675 - 47147 - 36320 - 7780 - 58580 - 20483 - 13007 - 16485 - 58752 - 40693 - 63371 - 17264 - 24369 - 15628 - 19769 - 18769 - 3413 - 9485 - 14653 - 19733 - 5429 - 1293 - 9529 - 1293 - 1357 - 3377 - 25861 - 12621 - 14337 - 27236 - 56922 - 59590 - 25690 - 25696 - 1026"
             Dim classFactory As SwDMClassFactory = TryCast(Activator.CreateInstance(Type.GetTypeFromProgID("SwDocumentMgr.SwDMClassFactory")), SwDMClassFactory)
             Dim swDmApp As SwDMApplication4 = classFactory.GetApplication(docMgrKey)
 
@@ -964,14 +1559,14 @@ Public Class BatchPDM
                         eFolder = eVault.GetObject(EdmObjectType.EdmObject_Folder, folderData.mlObjectID2)
 
                         If eFolder IsNot Nothing Then
-                            'TraverseFolderForParts(swApp, count, eFolder)
                             If findReadOnly = False Then
+                                TraverseFolderForParts(swApp, count, eFolder, folderLetter)
                                 TraverseFolderForAssemblies(swDmApp, count, eFolder, folderLetter)
                             Else
                                 TraverseFolderForAssembliesReadOnly(swDmApp, count, eFolder)
                             End If
                         Else
-                            WriteToLog(True, $"Unable to get folder object with ID: {folderData.mlObjectID2}")
+                            WriteToLog(True, $"Unable To Get folder Object With ID  {folderData.mlObjectID2}")
                         End If
 
                         eFolder = Nothing
@@ -989,9 +1584,491 @@ Public Class BatchPDM
             Dim st As New StackTrace(True)
             st = New StackTrace(ex, True)
 
-            MsgBox($"The following error occurred:{vbNewLine}{vbNewLine}{ex.Message} (Line: {st.GetFrame(0).GetFileLineNumber()})", MsgBoxStyle.Exclamation, My.Application.Info.AssemblyName)
+            MsgBox($"The following Error occurred{vbNewLine}{vbNewLine}{ex.Message} (Line {st.GetFrame(0).GetFileLineNumber()})", MsgBoxStyle.Exclamation, My.Application.Info.AssemblyName)
 
         End Try
+
+    End Sub
+
+    Private Sub FindFiles_SetID(poCmd As EdmCmd, ByRef ppoData As System.Array, eVault As EdmVault5, csvPath As String)
+
+        Dim eFolder As IEdmFolder6 = Nothing
+
+        Try
+            Dim processedList As New List(Of String)
+            Dim count As Integer = 0
+            Dim success As Boolean = True
+
+            Dim docMgrKey As String = "CONSTRUCCIONESMECANICASALCAYSLswdocmgr_general-11785 - 2051 - 64 - 17409 - 8723 - 34307 - 7 - 6120 - 12153 - 28675 - 47147 - 36320 - 7780 - 58580 - 20483 - 13007 - 16485 - 58752 - 40693 - 63371 - 17264 - 24369 - 15628 - 19769 - 18769 - 3413 - 9485 - 14653 - 19733 - 5429 - 1293 - 9529 - 1293 - 1357 - 3377 - 25861 - 12621 - 14337 - 27236 - 56922 - 59590 - 25690 - 25696 - 1026"
+            Dim classFactory As SwDMClassFactory = TryCast(Activator.CreateInstance(Type.GetTypeFromProgID("SwDocumentMgr.SwDMClassFactory")), SwDMClassFactory)
+            Dim swDmApp As SwDMApplication4 = classFactory.GetApplication(docMgrKey)
+
+            Dim fileIDs As Dictionary(Of String, String) = ReadCSVtoDict(csvPath)
+
+            If swDmApp IsNot Nothing Then
+
+                For Each folderData In ppoData
+
+                    If processedList.Contains(folderData.mlObjectID2) = False Then
+
+                        processedList.Add(folderData.mlObjectID2)
+
+                        eFolder = eVault.GetObject(EdmObjectType.EdmObject_Folder, folderData.mlObjectID2)
+
+                        If eFolder IsNot Nothing Then
+                            TraverseFolderForFiles_SetID(swDmApp, count, eFolder, fileIDs)
+                        Else
+                            WriteToLog(True, $"Unable To Get folder Object With ID  {folderData.mlObjectID2}")
+                        End If
+
+                        eFolder = Nothing
+                    End If
+                Next
+
+                MsgBox($"Successfully processed {count} files", MsgBoxStyle.Information, "BatchPDM")
+
+            End If
+
+        Catch ex As System.Exception
+            Dim st As New StackTrace(True)
+            st = New StackTrace(ex, True)
+
+            MsgBox($"The following Error occurred{vbNewLine}{vbNewLine}{ex.Message} (Line {st.GetFrame(0).GetFileLineNumber()})", MsgBoxStyle.Exclamation, My.Application.Info.AssemblyName)
+
+        End Try
+
+    End Sub
+
+    Sub TraverseFolderForFiles_SetID(ByRef swDmApp As SwDMApplication4, ByRef count As Integer, eFolder As IEdmFolder5, fileIDs As Dictionary(Of String, String))
+
+        Const ID_PROPERTY As String = "IQMS_ARINVT"
+
+        If eFolder IsNot Nothing Then
+
+            Dim pdmFilePos As IEdmPos5
+            pdmFilePos = eFolder.GetFirstFilePosition()
+
+            Dim folderName As String = eFolder.Name
+
+            If (folderName.Contains(" ") = True) Then
+                Dim folderNameSplit() As String
+                folderNameSplit = folderName.Split(" ")
+                folderName = folderNameSplit(0)
+            End If
+
+            Dim IDnum As String = ""
+
+            If fileIDs.Keys.Contains(folderName) = True Then
+                IDnum = fileIDs.Item(folderName)
+            End If
+
+            If IDnum <> "" Then
+
+                While pdmFilePos.IsNull = False
+                    Dim eFile As IEdmFile5
+                    eFile = eFolder.GetNextFile(pdmFilePos)
+
+                    If eFile IsNot Nothing Then
+
+                        Dim fileExt As String = Strings.Right(eFile.Name, 6)
+
+                        If eFile.IsLocked = True Then
+                            If eFile.LockedByUser.Name.ToLower() = "admin" Then
+
+                                Dim result As SwDmDocumentOpenError
+                                Dim docType As SwDmDocumentType
+
+                                If fileExt.ToLower() = "sldasm" Then
+                                    docType = SwDmDocumentType.swDmDocumentAssembly
+                                ElseIf fileExt.ToLower() = "sldprt" Then
+                                    docType = SwDmDocumentType.swDmDocumentPart
+                                Else
+                                    Continue While
+                                End If
+
+                                Dim fileName As String = eFile.Name
+                                fileName = Strings.Left(fileName, InStr(fileName, ".") - 1)
+
+                                If (eFile.Name.Contains(" ") = True) Then
+                                    Dim fileNameSplit() As String
+                                    fileNameSplit = folderName.Split(" ")
+                                    fileName = fileNameSplit(0)
+                                End If
+
+                                If fileName.ToLower <> folderName.ToLower Then
+                                    Continue While
+                                End If
+
+                                Dim swDoc As SwDMDocument10 = swDmApp.GetDocument(eFile.LockPath, docType, False, result)
+                                'Dim swDoc As SwDMDocument10 = swDmApp.GetDocument(eFile.GetLocalPath(eFolder.ID), docType, True, result)
+
+                                If swDoc Is Nothing Then
+                                    WriteToLog(True, $"swDoc Is Nothing {eFile.GetLocalPath(eFolder.ID)}")
+
+                                    Continue While
+                                End If
+
+                                If result <> SwDmDocumentOpenError.swDmDocumentOpenErrorNone Then
+                                    WriteToLog(True, $"Error opening file {result.ToString} ({eFile.Name})")
+                                End If
+
+                                Dim removePropValue As String = ""
+
+                                Try
+                                    removePropValue = swDoc.GetCustomProperty(ID_PROPERTY, SwDmCustomInfoType.swDmCustomInfoText)
+                                Catch
+                                End Try
+
+                                If removePropValue <> "" Then
+                                    swDoc.DeleteCustomProperty(ID_PROPERTY)
+                                End If
+
+                                Dim swConfig As SwDMConfiguration10 = Nothing
+
+                                Try
+                                    swConfig = swDoc.ConfigurationManager.GetConfigurationByName("Predeterminado")
+                                Catch
+                                End Try
+
+                                Dim propExists As Boolean = False
+                                Dim IDpropValue As String = ""
+                                Dim revPropValue As String = ""
+
+                                If swConfig IsNot Nothing Then
+
+                                    Dim propNames As Object = swConfig.GetCustomPropertyNames
+
+                                    For Each propName In propNames
+
+                                        Dim linkedTo_Unused As String = ""
+                                        If propName = ID_PROPERTY Then
+                                            propExists = True
+
+                                            IDpropValue = swConfig.GetCustomPropertyValues(ID_PROPERTY, SwDmCustomInfoType.swDmCustomInfoText, linkedTo_Unused)
+
+                                        End If
+
+                                        If propName = "Revision" Then
+                                            revPropValue = swConfig.GetCustomPropertyValues("Revision", SwDmCustomInfoType.swDmCustomInfoText, linkedTo_Unused)
+
+                                            If revPropValue <> "A" Then
+                                                WriteToLog(True, $"Revision {revPropValue} ({eFile.Name})")
+                                            End If
+                                        End If
+                                    Next
+
+                                    If propExists = False Then
+                                        swConfig.AddCustomProperty(ID_PROPERTY, SwDmCustomInfoType.swDmCustomInfoText, IDnum)
+                                        swDoc.Save()
+
+                                        WriteToLog(False, $"{folderName},Success adding IQMS_ARINVT Property {IDnum} ({eFile.Name})")
+                                    ElseIf IDpropValue = "" Then
+                                        swConfig.SetCustomProperty(ID_PROPERTY, IDnum)
+                                        swDoc.Save()
+
+                                        WriteToLog(False, $"{folderName},Success setting IQMS_ARINVT Property {IDnum} ({eFile.Name})")
+                                    Else
+                                        WriteToLog(True, $"Property IQMS_ARINVT Not Set, existing value {IDpropValue} ({eFile.Name})")
+                                    End If
+                                Else
+                                    Dim configs As Object = swDoc.ConfigurationManager.GetConfigurationNames
+
+                                    Dim firstConfig As Boolean = True
+
+                                    For Each config In configs
+
+                                        propExists = False
+
+                                        Try
+                                            swConfig = swDoc.ConfigurationManager.GetConfigurationByName(config)
+                                        Catch
+                                        End Try
+
+                                        If swConfig IsNot Nothing Then
+                                            Dim propNames As Object = swConfig.GetCustomPropertyNames
+
+                                            For Each propName In propNames
+
+                                                Dim linkedTo_Unused As String = ""
+                                                If propName = ID_PROPERTY Then
+                                                    propExists = True
+
+                                                    IDpropValue = swConfig.GetCustomPropertyValues(ID_PROPERTY, SwDmCustomInfoType.swDmCustomInfoText, linkedTo_Unused)
+
+                                                End If
+
+                                                If propName = "Revision" Then
+                                                    revPropValue = swConfig.GetCustomPropertyValues("Revision", SwDmCustomInfoType.swDmCustomInfoText, linkedTo_Unused)
+
+                                                    If revPropValue <> "A" And firstConfig = True Then
+                                                        WriteToLog(True, $"Revision {revPropValue} ({eFile.Name})")
+                                                    End If
+                                                End If
+                                            Next
+
+                                            If propExists = False Then
+                                                swConfig.AddCustomProperty(ID_PROPERTY, SwDmCustomInfoType.swDmCustomInfoText, IDnum)
+
+                                                If firstConfig = True Then WriteToLog(False, $"{folderName},Success adding IQMS_ARINVT Property {IDnum} ({eFile.Name})")
+                                            ElseIf IDpropValue = "" Then
+                                                swConfig.SetCustomProperty(ID_PROPERTY, IDnum)
+
+                                                If firstConfig = True Then WriteToLog(False, $"{folderName},Success setting IQMS_ARINVT Property {IDnum} ({eFile.Name})")
+                                                'Else
+                                                '        WriteToLog(True, $"Property IQMS_ARINVT Not Set, existing value {IDpropValue} ({eFile.Name})")
+                                            End If
+
+                                        End If
+
+                                        firstConfig = False
+
+                                    Next
+
+                                    swDoc.Save()
+                                    'WriteToLog(True, $"Predeterminado config does Not exist ({eFile.Name})")
+                                End If
+
+                                swDoc.CloseDoc()
+
+                                count += 1
+
+                            Else
+                                WriteToLog(True, $"Not checked out To admin {eFile.Name}")
+                            End If
+                        End If
+
+                    End If
+
+                End While
+            End If
+
+            Dim pdmSubFolderPos As IEdmPos5
+            pdmSubFolderPos = eFolder.GetFirstSubFolderPosition()
+
+            While Not pdmSubFolderPos.IsNull
+                Dim pdmSubFolder As IEdmFolder5
+                pdmSubFolder = eFolder.GetNextSubFolder(pdmSubFolderPos)
+
+                TraverseFolderForFiles_SetID(swDmApp, count, pdmSubFolder, fileIDs)
+            End While
+
+        End If
+
+    End Sub
+
+    Private Sub FindFiles_GetID(poCmd As EdmCmd, ByRef ppoData As System.Array, eVault As EdmVault5, csvPath As String)
+
+        Dim eFolder As IEdmFolder6 = Nothing
+
+        Try
+            Dim processedList As New List(Of String)
+            Dim count As Integer = 0
+            Dim success As Boolean = True
+
+            Dim docMgrKey As String = "CONSTRUCCIONESMECANICASALCAYSLswdocmgr_general-11785 - 2051 - 64 - 17409 - 8723 - 34307 - 7 - 6120 - 12153 - 28675 - 47147 - 36320 - 7780 - 58580 - 20483 - 13007 - 16485 - 58752 - 40693 - 63371 - 17264 - 24369 - 15628 - 19769 - 18769 - 3413 - 9485 - 14653 - 19733 - 5429 - 1293 - 9529 - 1293 - 1357 - 3377 - 25861 - 12621 - 14337 - 27236 - 56922 - 59590 - 25690 - 25696 - 1026"
+            Dim classFactory As SwDMClassFactory = TryCast(Activator.CreateInstance(Type.GetTypeFromProgID("SwDocumentMgr.SwDMClassFactory")), SwDMClassFactory)
+            Dim swDmApp As SwDMApplication4 = classFactory.GetApplication(docMgrKey)
+
+            Dim fileIDs As Dictionary(Of String, String) = ReadCSVtoDict(csvPath)
+
+            If swDmApp IsNot Nothing Then
+
+                For Each folderData In ppoData
+
+                    If processedList.Contains(folderData.mlObjectID2) = False Then
+
+                        processedList.Add(folderData.mlObjectID2)
+
+                        eFolder = eVault.GetObject(EdmObjectType.EdmObject_Folder, folderData.mlObjectID2)
+
+                        If eFolder IsNot Nothing Then
+                            TraverseFolderForFiles_GetID(swDmApp, count, eFolder, fileIDs)
+                        Else
+                            WriteToLog(True, $"Unable To Get folder Object With ID  {folderData.mlObjectID2}")
+                        End If
+
+                        eFolder = Nothing
+                    End If
+                Next
+
+                MsgBox($"Successfully processed {count} files", MsgBoxStyle.Information, "BatchPDM")
+
+            End If
+
+        Catch ex As System.Exception
+            Dim st As New StackTrace(True)
+            st = New StackTrace(ex, True)
+
+            MsgBox($"The following Error occurred{vbNewLine}{vbNewLine}{ex.Message} (Line {st.GetFrame(0).GetFileLineNumber()})", MsgBoxStyle.Exclamation, My.Application.Info.AssemblyName)
+
+        End Try
+
+    End Sub
+
+    Sub TraverseFolderForFiles_GetID(ByRef swDmApp As SwDMApplication4, ByRef count As Integer, eFolder As IEdmFolder5, fileIDs As Dictionary(Of String, String))
+
+        Const ID_PROPERTY As String = "IQMS_ARINVT"
+
+        If eFolder IsNot Nothing Then
+
+            Dim pdmFilePos As IEdmPos5
+            pdmFilePos = eFolder.GetFirstFilePosition()
+
+            Dim folderName As String = eFolder.Name
+
+            If (folderName.Contains(" ") = True) Then
+                Dim folderNameSplit() As String
+                folderNameSplit = folderName.Split(" ")
+                folderName = folderNameSplit(0)
+            End If
+
+            Dim IDnum As String = ""
+
+            If fileIDs.Keys.Contains(folderName) = True Then
+                IDnum = fileIDs.Item(folderName)
+            End If
+
+            If IDnum <> "" Then
+
+                While pdmFilePos.IsNull = False
+                    Dim eFile As IEdmFile5
+                    eFile = eFolder.GetNextFile(pdmFilePos)
+
+                    If eFile IsNot Nothing Then
+
+                        Dim fileExt As String = Strings.Right(eFile.Name, 6)
+
+                        Dim result As SwDmDocumentOpenError
+                        Dim docType As SwDmDocumentType
+
+                        If fileExt.ToLower() = "sldasm" Then
+                            docType = SwDmDocumentType.swDmDocumentAssembly
+                        ElseIf fileExt.ToLower() = "sldprt" Then
+                            docType = SwDmDocumentType.swDmDocumentPart
+                        Else
+                            Continue While
+                        End If
+
+                        Dim fileName As String = eFile.Name
+                        fileName = Strings.Left(fileName, InStr(fileName, ".") - 1)
+
+                        If (eFile.Name.Contains(" ") = True) Then
+                            Dim fileNameSplit() As String
+                            fileNameSplit = folderName.Split(" ")
+                            fileName = fileNameSplit(0)
+                        End If
+
+                        If fileName.ToLower <> folderName.ToLower Then
+                            Continue While
+                        End If
+
+                        Dim swDoc As SwDMDocument10 = swDmApp.GetDocument(eFile.GetLocalPath(eFolder.ID), docType, True, result)
+
+                        If swDoc Is Nothing Then
+                            WriteToLog(True, $"swDoc Is Nothing {eFile.GetLocalPath(eFolder.ID)}")
+
+                            Continue While
+                        End If
+
+                        If result <> SwDmDocumentOpenError.swDmDocumentOpenErrorNone Then
+                            WriteToLog(True, $"Error opening file {result.ToString} ({eFile.Name})")
+                        End If
+
+                        Dim swConfig As SwDMConfiguration10 = Nothing
+
+                        Try
+                            swConfig = swDoc.ConfigurationManager.GetConfigurationByName("Predeterminado")
+                        Catch
+                        End Try
+
+                        Dim propExists As Boolean = False
+                        Dim IDpropValue As String = ""
+
+                        If swConfig IsNot Nothing Then
+
+                            Dim propNames As Object = swConfig.GetCustomPropertyNames
+
+                            If propNames IsNot Nothing Then
+
+                                For Each propName In propNames
+
+                                    Dim linkedTo_Unused As String = ""
+                                    If propName = ID_PROPERTY Then
+                                        propExists = True
+
+                                        IDpropValue = swConfig.GetCustomPropertyValues(ID_PROPERTY, SwDmCustomInfoType.swDmCustomInfoText, linkedTo_Unused)
+
+                                    End If
+                                Next
+
+                                If propExists = False Then
+                                    WriteToLog(False, $"{folderName}, missing adding IQMS_ARINVT Property {IDnum} ({eFile.Name})")
+                                ElseIf IDpropValue = "" Then
+                                    WriteToLog(False, $"{folderName}, missing setting IQMS_ARINVT Property {IDnum} ({eFile.Name})")
+                                End If
+                            Else
+                                WriteToLog(False, $"{folderName}, no properties found (IQMS_ARINVT Property {IDnum}) ({eFile.Name})")
+                            End If
+                        Else
+                            Dim configs As Object = swDoc.ConfigurationManager.GetConfigurationNames
+
+                            For Each config In configs
+
+                                propExists = False
+
+                                Try
+                                    swConfig = swDoc.ConfigurationManager.GetConfigurationByName(config)
+                                Catch
+                                End Try
+
+                                If swConfig IsNot Nothing Then
+                                    Dim propNames As Object = swConfig.GetCustomPropertyNames
+
+                                    For Each propName In propNames
+
+                                        Dim linkedTo_Unused As String = ""
+                                        If propName = ID_PROPERTY Then
+                                            propExists = True
+
+                                            IDpropValue = swConfig.GetCustomPropertyValues(ID_PROPERTY, SwDmCustomInfoType.swDmCustomInfoText, linkedTo_Unused)
+
+                                        End If
+                                    Next
+
+                                    If propExists = False Then
+                                        WriteToLog(False, $"{folderName}, missing IQMS_ARINVT Property {IDnum} ({eFile.Name})")
+                                        Exit For
+                                    ElseIf IDpropValue = "" Then
+                                        WriteToLog(False, $"{folderName}, missing IQMS_ARINVT Property {IDnum} ({eFile.Name})")
+                                        Exit For
+                                    End If
+
+                                End If
+
+
+                            Next
+                        End If
+
+                        swDoc.CloseDoc()
+
+                        count += 1
+
+                    End If
+
+                End While
+            End If
+
+            Dim pdmSubFolderPos As IEdmPos5
+            pdmSubFolderPos = eFolder.GetFirstSubFolderPosition()
+
+            While Not pdmSubFolderPos.IsNull
+                Dim pdmSubFolder As IEdmFolder5
+                pdmSubFolder = eFolder.GetNextSubFolder(pdmSubFolderPos)
+
+                TraverseFolderForFiles_GetID(swDmApp, count, pdmSubFolder, fileIDs)
+            End While
+
+        End If
 
     End Sub
 
@@ -1014,9 +2091,9 @@ Public Class BatchPDM
                         Dim swDoc As SwDMDocument10 = swDmApp.GetDocument(eFile.GetLocalPath(eFolder.ID), SwDmDocumentType.swDmDocumentAssembly, True, result)
 
                         If result <> SwDmDocumentOpenError.swDmDocumentOpenErrorNone Then
-                            WriteToLog(True, $"Error opening file: {result.ToString} ({eFile.Name})")
+                            WriteToLog(True, $"Error opening file {result.ToString} ({eFile.Name})")
                             'Else
-                            '    WriteToLog(False, $"Success setting filename property: {eFile.Name}")
+                            '    WriteToLog(False, $"Success setting filename Property {eFile.Name}")
                         End If
 
                         Dim propExists As Boolean = False
@@ -1038,7 +2115,7 @@ Public Class BatchPDM
 
                         swDoc.CloseDoc()
 
-                        If propExists = True Then WriteToLog(False, $"Material property exists: {eFile.Name}")
+                        If propExists = True Then WriteToLog(False, $"Material Property exists {eFile.Name}")
 
                         count += 1
 
@@ -1090,9 +2167,9 @@ Public Class BatchPDM
                                 Dim swDoc As SwDMDocument10 = swDmApp.GetDocument(eFile.LockPath, SwDmDocumentType.swDmDocumentAssembly, False, result)
 
                                 If result <> SwDmDocumentOpenError.swDmDocumentOpenErrorNone Then
-                                    WriteToLog(True, $"Error opening file: {result.ToString} ({eFile.Name})", folderLetter)
+                                    WriteToLog(True, $"Error opening file {result.ToString} ({eFile.Name})", folderLetter)
                                 Else
-                                    WriteToLog(False, $"Success setting filename property: {eFile.Name}", folderLetter)
+                                    WriteToLog(False, $"Success setting filename Property {eFile.Name}", folderLetter)
                                 End If
 
                                 Dim configNames As Object = swDoc.ConfigurationManager.GetConfigurationNames
@@ -1127,16 +2204,16 @@ Public Class BatchPDM
 
                                 'If count Mod RESTARTSWCOUNT = 0 Then
 
-                                '    WriteToLog(False, $"Restart solidworks: {count} files processed", folderLetter)
+                                '    WriteToLog(False, $"Restart solidworks {count} files processed", folderLetter)
                                 '    CloseSW(swApp)
                                 '    swApp = StartSW(folderLetter:=count)
 
-                                '    If swApp Is Nothing Then WriteToLog(True, $"Batch did not complete successfully", folderLetter)
+                                '    If swApp Is Nothing Then WriteToLog(True, $"Batch did Not complete successfully", folderLetter)
 
                                 'End If
 
                             Else
-                                WriteToLog(True, $"Not checked out to admin: {eFile.Name}", folderLetter)
+                                WriteToLog(True, $"Not checked out To admin {eFile.Name}", folderLetter)
                             End If
                         End If
                     End If
@@ -1174,7 +2251,7 @@ Public Class BatchPDM
         'swApp.OpenDocSilent(filePath, swDocumentTypes_e.swDocASSEMBLY, errors)
         swApp.OpenDoc6(filePath, swDocumentTypes_e.swDocASSEMBLY, swOpenDocOptions_e.swOpenDocOptions_LoadLightweight + swOpenDocOptions_e.swOpenDocOptions_Silent, "", errors, warnings)
         If errors <> 0 Then
-            WriteToLog(True, $"Open error {errors}: {filePath}", folderLetter)
+            WriteToLog(True, $"Open Error {errors} {filePath}", folderLetter)
         End If
 
         Dim swFile As ModelDoc2
@@ -1200,7 +2277,7 @@ Public Class BatchPDM
 
         swPropMgr.Add3("Material", swCustomInfoType_e.swCustomInfoText, """" & "SW-Material@" & swFileName & """", 1)
         swPropMgr.Add3("Weight", swCustomInfoType_e.swCustomInfoText, """" & "SW-Masa@" & swFileName & """", 1)
-        swPropMgr.Add3("Código", swCustomInfoType_e.swCustomInfoText, "$PRP:" & """" & "SW-Nombre del archivo(File Name)" & """", 1)
+        swPropMgr.Add3("Código", swCustomInfoType_e.swCustomInfoText, "$PRP" & """" & "SW-Nombre del archivo(File Name)" & """", 1)
 
 
         Dim swProp As CustomPropertyManager
@@ -1260,10 +2337,10 @@ Public Class BatchPDM
                         If eFileCard IsNot Nothing Then
                             eFileCard.GetVar("Laser", "@", variableValue)
                         Else
-                            WriteToLog(True, $"Unable to read 'Laser' property: {eFile.Name}", folderLetter)
+                            WriteToLog(True, $"Unable To read 'Laser' property: {eFile.Name}", folderLetter)
                         End If
 
-                        If variableValue IsNot Nothing Then
+                                                If variableValue IsNot Nothing Then
                             If variableValue.ToString().ToLower() = "x" Then
                                 If eFile.IsLocked = True Then
                                     If eFile.LockedByUser.Name.ToLower() = "admin" Then
